@@ -1,5 +1,7 @@
 # subscription-model-revenue
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/herrrickshaw/discom-debt-and-revenue-models/blob/main/notebooks/colab_test.ipynb)
+
 Revenue & cost-recovery modelling experiments.
 
 ## Contents
