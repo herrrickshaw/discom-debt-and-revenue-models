@@ -117,3 +117,18 @@ def test_rejects_atc_loss_smaller_than_collection_shortfall():
     # 1% AT&C with 95% collection implies billing efficiency > 100%: inconsistent inputs.
     with pytest.raises(ValueError):
         project(flat_inputs(atc_loss_pct=1.0, collection_eff_pct=95.0), Scenario("x"))
+
+
+def test_cli_help_and_json_run(monkeypatch, capsys):
+    """Help strings containing a bare '%' break argparse ('--help' always; any call on 3.14+)."""
+    import json as _json
+    import discom_debt_calculator as m
+    monkeypatch.setattr(sys, "argv", ["prog", "--help"])
+    with pytest.raises(SystemExit) as e:
+        m.main()
+    assert e.value.code == 0
+    capsys.readouterr()
+    monkeypatch.setattr(sys, "argv", ["prog", "--json", "--horizon", "2"])
+    m.main()
+    out = _json.loads(capsys.readouterr().out)
+    assert len(out["results"]) == 5 and len(out["results"][0]["rows"]) == 2
