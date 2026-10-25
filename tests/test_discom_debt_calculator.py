@@ -111,3 +111,9 @@ def test_default_scenarios_rank_sensibly():
     res = {sc.name: project(inp, sc)["final_debt_cr"] for sc in default_scenarios()}
     assert res["Aggressive turnaround"] < res["Combined (UDAY-style)"] < res["Status Quo (no action)"]
     assert math.isfinite(res["Status Quo (no action)"])
+
+
+def test_rejects_atc_loss_smaller_than_collection_shortfall():
+    # 1% AT&C with 95% collection implies billing efficiency > 100%: inconsistent inputs.
+    with pytest.raises(ValueError):
+        project(flat_inputs(atc_loss_pct=1.0, collection_eff_pct=95.0), Scenario("x"))

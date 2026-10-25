@@ -11,9 +11,13 @@
 #   close that gap and pay down debt over a multi-year horizon.
 #
 # CORE ECONOMICS (per year)
-#   billed_units      = energy_input × (1 − AT&C_loss%)
+#   AT&C_loss         = 1 − billing_eff × collection_eff   (PFC/CEA definition)
+#   billing_eff       = (1 − AT&C_loss) / collection_eff   (backed out of the inputs)
+#   billed_units      = energy_input × billing_eff
 #   revenue_billed    = billed_units × tariff(ARR)
-#   revenue_collected = revenue_billed × collection_efficiency%
+#   revenue_collected = revenue_billed × collection_eff  = energy × (1 − AT&C) × ARR
+#   (AT&C already contains the collection shortfall, so collection efficiency must
+#    not be applied on top of (1 − AT&C); a collection gain lowers AT&C instead.)
 #   cost_of_supply    = energy_input × ACS
 #   operating_gap     = revenue_collected + subsidy_received − cost_of_supply
 #   interest          = opening_debt × interest_rate
@@ -99,13 +103,23 @@ def project(inp: DiscomInputs, sc: Scenario) -> dict:
     loss   = inp.atc_loss_pct
     coll   = inp.collection_eff_pct
     subq   = inp.subsidy_realised_pct
+    if not 0 < coll <= 100 or not 0 <= loss <= 100:
+        raise ValueError("collection efficiency must be in (0, 100] and AT&C loss in [0, 100]")
+    # Billing efficiency implied by AT&C = 1 - BE x CE; held fixed unless the AT&C lever moves it.
+    bill_eff = (1 - loss / 100.0) / (coll / 100.0)
+    if bill_eff > 1 + 1e-9:
+        raise ValueError("AT&C loss cannot be below the collection shortfall (1 - collection efficiency)")
 
     rows = []
     for yr in range(1, inp.horizon_years + 1):
         # Apply annual levers
         arr  *= (1 + sc.tariff_hike_pct / 100.0)
-        loss  = max(0.0, loss - sc.atc_loss_reduction_pp)
         coll  = min(100.0, coll + sc.collection_gain_pp)
+        # A collection gain with billing efficiency held lowers AT&C; the AT&C lever then
+        # cuts the remaining loss further (by improving billing efficiency, capped at 100%).
+        loss  = (1 - bill_eff * coll / 100.0) * 100.0
+        loss  = max(0.0, loss - sc.atc_loss_reduction_pp, 100.0 - coll)
+        bill_eff = (1 - loss / 100.0) / (coll / 100.0)
         subq  = min(100.0, subq + sc.subsidy_realised_pp)
         acs  *= (1 + inp.acs_growth_pct / 100.0)
         energy *= (1 + inp.demand_growth_pct / 100.0)
@@ -113,7 +127,7 @@ def project(inp: DiscomInputs, sc: Scenario) -> dict:
         # Annual P&L (₹ crore):  MU × ₹/kWh = ₹ crore  (1 MU × ₹1/kWh = ₹0.1 cr... )
         # Unit math: 1 MU = 1e6 kWh; ₹/kWh × 1e6 = ₹ in millions = ₹/10 crore.
         # So crore = MU × ₹perkWh / 10.
-        billed_units   = energy * (1 - loss / 100.0)
+        billed_units   = energy * bill_eff
         rev_billed     = billed_units * arr / 10.0
         rev_collected  = rev_billed * coll / 100.0
         cost_supply    = energy * acs / 10.0
