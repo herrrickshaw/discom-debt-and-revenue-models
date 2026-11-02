@@ -148,3 +148,9 @@ def test_cli_text_smoke():
     r = _cli("--debt", "50000", "--acs", "7.2", "--arr", "6.1", "--loss", "18")
     assert r.returncode == 0, r.stderr
     assert "Opening debt: ₹50,000 Cr" in r.stdout
+
+
+def test_cli_help_does_not_crash():
+    r = _cli("--help")
+    assert r.returncode == 0, r.stderr
+    assert "AT&C loss (%)" in r.stdout
