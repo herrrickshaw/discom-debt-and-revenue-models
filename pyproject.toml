@@ -1,0 +1,20 @@
+[project]
+name = "discom-debt-and-revenue-models"
+version = "0.1.0"
+description = "DISCOM debt-reduction scenario calculator and Dirichlet revenue-seasonality simulation (illustrative models)"
+requires-python = ">=3.9"
+dependencies = ["numpy", "matplotlib"]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+extend-exclude = ["notebooks", "from-global-market-data", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
