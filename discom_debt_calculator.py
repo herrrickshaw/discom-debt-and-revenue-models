@@ -210,8 +210,13 @@ def run(inp: DiscomInputs, scenarios: List[Scenario], as_json: bool = False):
     bb = next(b for b in bills if b["scenario"] == best["scenario"])
     print(f"    Cost to the consumer: +{bb['bill_increase_pct']:.0f}% on the monthly bill over "
           f"{inp.horizon_years} years.")
-    print(f"  • Operational levers (loss + collection + subsidy) cut debt WITHOUT the full")
-    print(f"    tariff burden on consumers — the key affordability trade-off.")
+    ops = next(r for r in results if "Loss + collection" in r["scenario"])
+    saved = sq["final_debt_cr"] - ops["final_debt_cr"]
+    verdict = "cut" if ops["debt_change_cr"] < 0 else "still grow"
+    print(f"  • Operational levers alone (loss + collection + subsidy, no tariff hike) save "
+          f"₹{saved:,.0f} Cr vs doing nothing")
+    print(f"    but debt would {verdict} ({ops['debt_change_cr']:+,.0f} Cr): reform cannot close the "
+          f"gap without tariff action — the affordability trade-off.")
     print("=" * 78)
     print("  ⚠️  Illustrative model. NOT a tariff filing or audited DISCOM accounts.")
     print("=" * 78)
@@ -227,9 +232,9 @@ def main():
     p.add_argument("--energy", type=float, help="Annual energy input (MU)")
     p.add_argument("--acs", type=float, help="Average Cost of Supply (₹/kWh)")
     p.add_argument("--arr", type=float, help="Average Revenue Realised (₹/kWh)")
-    p.add_argument("--loss", type=float, help="AT&C loss (%)")
-    p.add_argument("--collection", type=float, help="Collection efficiency (%)")
-    p.add_argument("--interest", type=float, help="Interest rate on debt (%)")
+    p.add_argument("--loss", type=float, help="AT&C loss (%%)")
+    p.add_argument("--collection", type=float, help="Collection efficiency (%%)")
+    p.add_argument("--interest", type=float, help="Interest rate on debt (%%)")
     p.add_argument("--horizon", type=int, help="Projection horizon (years)")
     p.add_argument("--monthly-kwh", type=float, help="Representative consumer monthly kWh")
     p.add_argument("--json", action="store_true", help="Machine-readable JSON output")
