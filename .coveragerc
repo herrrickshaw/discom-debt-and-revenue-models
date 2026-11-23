@@ -1,0 +1,13 @@
+[run]
+source = .
+omit =
+    tests/*
+    .github/*
+    # Colab notebook exports (module-level plotting scripts, no functions)
+    random_numbers_using_dirichlet.py
+    from-global-market-data/random_numbers_using_dirichlet.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
